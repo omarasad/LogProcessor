@@ -1,0 +1,152 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+
+import edu.mcgill.disl.log.StatisticsManager;
+
+public class HttpLogList {
+
+	ArrayList<HttpLogSegment> httpLogList;
+	HttpLogSegment currentLogInterval;
+	long segBegTimeStamp = -1;
+	long segTimeInterval = 5 * 60 * 1000;
+	int NUMBER_INTERVALS = 10;
+
+	public HttpLogList(StatisticsManager sm) {
+		httpLogList = new ArrayList<HttpLogSegment>();
+		
+		segTimeInterval = Long.parseLong(sm.props.getProperty(StatisticsManager.SEGMENT_INTERVAL));
+		NUMBER_INTERVALS = Integer.parseInt(sm.props.getProperty(StatisticsManager.NO_INTERVALS));
+		
+		// addNewCacheInterval();
+	}
+
+	public void addNewHttpInterval() {
+		if(currentLogInterval!=null){
+			Analyser.log.info("AVGTIME\t" + currentLogInterval.avgResp + "\tREQS\t" + currentLogInterval.reqCount);
+		}
+		currentLogInterval = new HttpLogSegment();
+		httpLogList.add(currentLogInterval);
+		segBegTimeStamp = System.currentTimeMillis();
+	}
+
+	public void addtoHttpLogInterval(HttpRequestObject hr, long timetaken) {
+		if (segBegTimeStamp == -1
+				|| (System.currentTimeMillis() - segBegTimeStamp > segTimeInterval)) {
+			addNewHttpInterval();
+		}
+
+		HttpRequestObject ht;
+
+		if ((ht = currentLogInterval.reqMap.get(hr.url)) != null) {
+			ht.last_date_time = hr.first_date_time;
+			ht.resp_code = hr.resp_code;
+			if (hr.resp_code == 200 || hr.resp_code == 304) {
+				ht.success_count++;
+			} else {
+				ht.failure_count++;
+			}
+			ht.counter++;
+			ht.execution_time = ((ht.execution_time * (ht.counter - 1)) + timetaken)
+					/ ht.counter;
+			
+			//for avg total response time in a seg
+			currentLogInterval.updateRespTime(timetaken);
+			
+		} else {
+			currentLogInterval.reqMap.put(hr.url, hr);
+		}
+	}
+
+	public class HttpLogSegment {
+		HashMap<String, HttpRequestObject> reqMap;
+		
+		int reqCount = 0;
+		double avgResp = 0;
+		
+		public void updateRespTime(long time){
+			avgResp = ((avgResp * reqCount) + time)/++reqCount;
+		}
+
+		public HttpLogSegment() {
+			reqMap = new HashMap<String, HttpRequestObject>();
+		}
+	}
+
+	public HashMap<String, HttpRequestObject> aggregateSegments() {
+		HashMap<String, HttpRequestObject> hc = new HashMap<String, HttpRequestObject>();
+
+		int no_intervals = httpLogList.size();
+
+		for (int i = 0; i < NUMBER_INTERVALS && no_intervals > 0; i++) {
+			HttpLogSegment cls = httpLogList.get(no_intervals - 1);
+
+			Collection<HttpRequestObject> c = cls.reqMap.values();
+			Iterator<HttpRequestObject> it = c.iterator();
+
+			while (it.hasNext()) {
+				HttpRequestObject cot = it.next();
+				if (!hc.containsKey(cot.url)) {
+					hc.put(cot.url, cot);
+				} else {
+					HttpRequestObject cachObj = hc.get(cot.url);
+					cachObj.counter +=  cot.counter;
+					//TODO update all other variables
+				}
+			}
+
+			no_intervals--;
+		}
+
+		return hc;
+	}
+	
+	public static HashMap<String, HttpRequestObject> mergeHttpRequestObjects(List<HashMap<String, HttpRequestObject>> httpMaps) {
+		HashMap<String, HttpRequestObject> hc = new HashMap<String, HttpRequestObject>();
+
+		for (HashMap<String,HttpRequestObject> httpMap : httpMaps) {
+			
+			for(Entry<String, HttpRequestObject> entry : httpMap.entrySet()){
+				HttpRequestObject obj = hc.get(entry.getKey());
+				if(obj == null){
+					obj = (HttpRequestObject) entry.getValue().clone();
+					hc.put(entry.getKey(), obj);
+				}else{
+					HttpRequestObject reqObj = entry.getValue();
+					obj.counter += reqObj.counter;
+					//TODO update other variables too
+				}
+			}
+		}
+
+		return hc;
+	}
+	
+	
+	public static List<HttpRequestObject> getHttpRequestObjectList(HashMap<String, HttpRequestObject> map,final boolean desc){
+		
+		List<HttpRequestObject> col = new ArrayList<HttpRequestObject>(map.values());
+		
+		Collections.sort(col, new Comparator<HttpRequestObject>(){
+
+			@Override
+			public int compare(HttpRequestObject o1, HttpRequestObject o2) {
+				
+				return desc? o2.counter - o1.counter : o1.counter - o2.counter;
+			}
+			
+		});
+		
+		return col;
+		
+	}
+
+}

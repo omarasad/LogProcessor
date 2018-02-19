@@ -1,0 +1,48 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.*;
+
+import org.apache.log4j.Logger;
+
+import edu.mcgill.disl.analytics.policy.AppServerPolicy;
+
+public class ASServer {
+	
+	public AppServerPolicy currentPolicy = null; 
+	
+	static final Logger log = Logger.getLogger(ASServer.class.getName());
+	
+	String serverId;
+	
+	long policyTimeStamp;
+	
+	Map<String,Object> structs;
+	
+	public int serverNo; 
+	
+	
+	public ASServer(String id, int servNo) {
+		serverId = id;
+		serverNo = servNo; 
+		structs = new HashMap<String,Object>();
+		log.debug("Server:" + serverId);
+	}
+	
+	public Object getStruct(String name){
+		return structs.get(name);
+	}
+	
+	public Map<String,Object> getStructs(){
+		return structs;
+	}
+
+	
+	public void setStruct(String name, Object struct){
+		structs.put(name, struct);
+	}
+	
+	public String getServerId(){
+		return serverId;
+	}
+	
+}

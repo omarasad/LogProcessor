@@ -1,0 +1,51 @@
+package edu.mcgill.disl.analytics.policy;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+
+@SuppressWarnings("serial")
+public class AppServerPolicy implements Serializable{
+	
+	public Map<ObjectKey, RuleList> policyMap = new HashMap<ObjectKey,RuleList>();
+	public static final String IGNORE = "IGNORE";
+	public static final String LOCAL_STORE = "LOCAL_STORE";
+	public String notFoundRule = IGNORE;
+	
+	public AppServerPolicy()
+	{
+		
+	}
+	
+	public void addNewPolicy(ObjectKey ok, RuleList rl){
+		policyMap.put(ok, rl);
+	}
+		
+	public RuleList getRuleList(ObjectKey ok){
+		return policyMap.get(ok);
+	}
+	
+	public RuleList getRuleListForObject(Object key){
+		
+		for(ObjectKey k : policyMap.keySet()){
+			if(k instanceof ListKey){
+				ListKey lk = (ListKey)k;
+				if(lk.key.equals(key)){
+					return policyMap.get(k);
+				}
+			}
+		}
+		return null;
+	}
+	
+	public String toString(){
+		String ret = new String();
+		
+		ret = policyMap.toString() + "\n";
+		
+		return ret;
+	}
+	
+}

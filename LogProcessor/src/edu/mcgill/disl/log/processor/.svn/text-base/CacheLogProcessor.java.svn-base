@@ -1,0 +1,120 @@
+package edu.mcgill.disl.log.processor;
+
+import edu.mcgill.disl.analytics.ASServer;
+import edu.mcgill.disl.analytics.CacheLogList;
+import edu.mcgill.disl.analytics.CacheObject;
+
+import java.util.HashMap;
+
+import org.apache.log4j.spi.LoggingEvent;
+
+import edu.mcgill.disl.log.StatisticsManager;
+
+public class CacheLogProcessor extends LogProcessor {
+	
+	//public HashMap<String, CacheObject> cacheMap;
+		
+	public CacheLogProcessor(StatisticsManager sm){
+		super(sm);
+		//register instance
+		initializeStructures();
+		getManager().registerProcessor(this);
+		
+		//cacheMap = new HashMap<String, CacheObject>();
+	}
+
+	@Override
+	public synchronized void processLog(LoggingEvent le) {
+		
+		//System.out.println("Inside CacheLogProcessor: processLog");
+		
+		if(getLogType(le).equals(ACCESS_LOG))
+			return;
+		
+//		System.out.println("CacheLogProcessor: " + le.getMessage());
+		
+		ASServer serv = getLogServer(le);
+		
+		String[] strarr = ((String) (le.getMessage())).split("::");
+		
+		String cacheKey = strarr[1];
+		String getput = strarr[0];
+		String size = "0";
+		
+		if(getput.contains("put"))
+		{
+			size = strarr[2];
+		}
+		
+		
+		
+		
+		CacheLogList cl = (CacheLogList) serv.getStruct("cacheLogGroup");
+		
+		CacheObject co = new CacheObject();
+    	co.cacheKey = cacheKey;
+    	co.size = Integer.parseInt(size);
+//    	if(getput.contains("get"))
+//    	{
+//    		co.first_get_time = le.timeStamp;
+//    		co.last_get_time = le.timeStamp;
+//    		co.getCount++;
+//    		
+//    	}
+//    	else if(getput.contains("put"))
+//    	{
+//    		co.first_put_time = le.timeStamp;
+//    		co.last_put_time = le.timeStamp;
+//    		co.putCount++;
+//    	}
+    	co.getCount++;
+    	
+    	cl.addToCacheLogInterval(co, getput);
+
+	/*	
+        if(cacheMap.containsKey(cacheKey))
+        {
+        	CacheObject ctemp = (CacheObject) cacheMap.get(cacheKey);
+        	if(strarr[0].contains("get"))
+        	{
+        		ctemp.last_get_time = le.timeStamp;
+        		ctemp.getCount++;
+        	}
+        	else if(strarr[1].contains("put"))
+        	{
+        		ctemp.last_put_time = le.timeStamp;
+        		ctemp.putCount++;
+        	}
+        		        		
+        }
+        else
+        {
+        	CacheObject co = new CacheObject();
+        	co.cacheKey = cacheKey;
+        	if(strarr[0].contains("get"))
+        	{
+        		co.first_get_time = le.timeStamp;
+        		co.last_get_time = le.timeStamp;
+        		co.getCount++;
+        	}
+        	else if(strarr[0].contains("put"))
+        	{
+        		co.first_put_time = le.timeStamp;
+        		co.last_put_time = le.timeStamp;
+        		co.putCount++;
+        	}
+        	cacheMap.put(co.cacheKey, co);
+        } */
+	}
+	
+	public void initializeStructures(){
+		for(ASServer serv : getManager().getASServers().values()){
+			//add all structures here for each server that we will maintain
+			
+			//activity counter
+			//serv.setStruct("cacheMap", new HashMap<String, CacheObject>());
+			serv.setStruct("cacheLogGroup", new CacheLogList(manager));
+			
+		}
+	}
+}

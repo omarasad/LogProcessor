@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+
+  <comment>Log and Analysis server configuration</comment>
+  
+  
+  <!-- entry key="appservers">node-11.trantor.lan,node-12.trantor.lan,node-13.trantor.lan,node-14.trantor.lan,node-18.trantor.lan</entry-->
+
+  <entry key="appservers">node-11.trantor.lan,node-12.trantor.lan,node-13.trantor.lan</entry>
+
+  
+  <entry key="lbserver">10.10.10.110</entry>
+  
+  <entry key="processor.classes">edu.mcgill.disl.log.processor.CacheLogProcessor,edu.mcgill.disl.log.processor.HttpRequestProcessor,edu.mcgill.disl.log.processor.RequestResourceMappingLogProcessor</entry>
+  
+  <entry key="analyser.classes">edu.mcgill.disl.analytics.RequestBasedAnalyser</entry>
+  
+  <entry key="rba.strategy.class">edu.mcgill.disl.analytics.AdvanceStrategy</entry>
+ 
+  <!-- RIZWAN PROPS BEG --> 
+  <entry key="rba.strategy.lbURLFreq">-1</entry>
+  <entry key="rba.stable.percent">.3</entry>
+  <entry key="rba.replicate.percent">0</entry>
+  <entry key="rba.max.alloc.divisor">1</entry>
+  <!-- RIZWAN PROPS END 210 --> 
+
+  <!-- lb|as|both -->
+  <entry key="policy.for">lb</entry>
+  
+  <!--entry key="analysis.interval">600000</entry-->
+
+  <!--entry key="analysis.interval">5700000</entry-->
+
+  <!--entry key="analysis.interval">180000</entry-->
+
+  <entry key="analysis.interval">3300000</entry>
+  
+  <entry key="as.cache.size">20000</entry>
+  
+  <entry key="as.cache.memory">0</entry>
+  
+  <entry key="repl_percent">0</entry>
+  
+  <entry key="each_cache">50</entry>
+  
+  <entry key="segment_interval">300000</entry>
+  
+  <entry key="no_intervals">100</entry>
+
+ <entry key="no_cache_object">4000</entry>
+
+ <entry key="obj_for_req">4000</entry>   
+</properties>

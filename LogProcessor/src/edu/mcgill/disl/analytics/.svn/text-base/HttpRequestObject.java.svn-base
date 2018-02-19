@@ -1,0 +1,49 @@
+package edu.mcgill.disl.analytics;
+
+public class HttpRequestObject implements Cloneable{
+	
+	public HttpRequestObject()
+	{
+		url = new String();
+		first_date_time = 0;
+		last_date_time = 0;
+		resp_code = 0;
+		type = new String();
+		success_count = 0;
+		failure_count = 0;
+		execution_time = 0;
+		counter = 0;
+	}
+	
+	public String url;
+	public long first_date_time;
+	public long last_date_time;
+	public long execution_time;
+	public int resp_code;
+	public String type;
+	public int success_count;
+	public int failure_count;
+	public int counter;
+	
+	public Object clone(){
+		HttpRequestObject newObj = new HttpRequestObject();
+		newObj.url = this.url;
+		newObj.first_date_time = this.first_date_time;
+		newObj.last_date_time = this.last_date_time;
+		newObj.execution_time = this.execution_time;
+		newObj.resp_code = this.resp_code;
+		newObj.type = this.type;
+		newObj.success_count = this.success_count;
+		newObj.failure_count = this.failure_count;
+		newObj.counter = this.counter;
+		return newObj;
+	}
+	
+	public String toString()
+	{
+		String result = new String();
+		result = "\n" + first_date_time + "\n" + last_date_time + "\n" + type + "\n" + resp_code + "\n" + success_count + "\n" + failure_count; 
+		return result;
+	}
+
+}

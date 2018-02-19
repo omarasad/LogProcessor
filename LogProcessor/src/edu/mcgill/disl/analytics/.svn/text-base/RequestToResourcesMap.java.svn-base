@@ -1,0 +1,70 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.*;
+
+public class RequestToResourcesMap {
+	
+	Map<String,HashSet<String>> map = new HashMap<String, HashSet<String>>(100);
+	
+	
+	public void addResource(String url, String res){
+		String tempURL = url;//templatizeUrl(url);
+		HashSet<String> resList = map.get(tempURL);
+		
+		if(resList == null){
+			resList = new HashSet<String>();
+			map.put(tempURL, resList);
+		}
+		resList.add(res);
+	}
+	
+	
+	public void addResources(String url, Collection<String> resources){
+		
+		String tempURL = url;//templatizeUrl(url);
+		
+		HashSet<String> resList = map.get(tempURL);
+		
+		if(resList == null){
+			resList = new HashSet<String>();
+			map.put(tempURL, resList);
+		}
+		
+		//for(String res:resources){
+		resList.addAll(resources);
+		//}
+	}
+	
+	
+	public String templatizeUrl(String url){
+		
+		StringBuffer sb = new StringBuffer(url.length());
+		boolean isVal=false;
+		for(int i=0;i<url.length();i++){
+			char ch = url.charAt(i);
+			if(ch=='='){
+				isVal = true;
+			}else if(isVal){
+				if(ch=='&'){
+					isVal = false;
+				}else{
+					continue;
+				}
+			}
+			sb.append(ch);
+		}
+		return sb.toString();
+	}
+	
+	public static void main(String[] args){
+		RequestToResourcesMap t = new RequestToResourcesMap();
+		
+		String url = "/rubis/user?a=w5&b=asdf+fsdf&cd=hello1";
+		
+		System.out.println(t.templatizeUrl(url));
+	}
+	
+	public String toString(){
+		return map.toString();
+	}
+}

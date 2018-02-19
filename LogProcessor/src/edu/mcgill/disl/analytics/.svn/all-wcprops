@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/dis/!svn/ver/61/trunk/LogProcessor/src/edu/mcgill/disl/analytics
+END
+ObjectBasedAnalyserRepDist.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ObjectBasedAnalyserRepDist.java
+END
+PopularReplicatedStrategy.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/PopularReplicatedStrategy.java
+END
+HttpRequestObject.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/dis/!svn/ver/12/trunk/LogProcessor/src/edu/mcgill/disl/analytics/HttpRequestObject.java
+END
+DistributionOnlyStrategy.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/DistributionOnlyStrategy.java
+END
+RequestBasedAnalyser.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/RequestBasedAnalyser.java
+END
+RequestToResourcesMap.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/dis/!svn/ver/68/trunk/LogProcessor/src/edu/mcgill/disl/analytics/RequestToResourcesMap.java
+END
+CacheObject.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/dis/!svn/ver/47/trunk/LogProcessor/src/edu/mcgill/disl/analytics/CacheObject.java
+END
+CacheLogList.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/dis/!svn/ver/61/trunk/LogProcessor/src/edu/mcgill/disl/analytics/CacheLogList.java
+END
+Analyser.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/Analyser.java
+END
+HttpLogList.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/HttpLogList.java
+END
+ResourceToRequestMap.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/dis/!svn/ver/68/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ResourceToRequestMap.java
+END
+RequestBasedAnalyserStrategy.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/dis/!svn/ver/12/trunk/LogProcessor/src/edu/mcgill/disl/analytics/RequestBasedAnalyserStrategy.java
+END
+ObjectBasedAnalyserRepOnly.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ObjectBasedAnalyserRepOnly.java
+END
+ASServer.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/dis/!svn/ver/12/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ASServer.java
+END
+AdvanceStrategy.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/AdvanceStrategy.java
+END
+ObjectBasedAnalyserLBOnly.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ObjectBasedAnalyserLBOnly.java
+END
+ObjectBasedAnalyser.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/dis/!svn/ver/73/trunk/LogProcessor/src/edu/mcgill/disl/analytics/ObjectBasedAnalyser.java
+END

@@ -1,0 +1,100 @@
+package edu.mcgill.disl.log.processor;
+
+import java.util.*;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LocationInfo;
+import org.apache.log4j.spi.LoggingEvent;
+
+import edu.mcgill.disl.analytics.ASServer;
+import edu.mcgill.disl.analytics.RequestToResourcesMap;
+import edu.mcgill.disl.analytics.ResourceToRequestMap;
+import edu.mcgill.disl.log.StatisticsManager;
+
+public class RequestResourceMappingLogProcessor extends LogProcessor{
+	
+	static final Logger log = Logger.getLogger(RequestResourceMappingLogProcessor.class.getCanonicalName());
+	
+	public static final String ACTIVITY_COUNTER = "activityCounter";
+	public static final String REQ_OBJ_MAP = "reqObjMap";
+	public static final String OBJ_REQ_MAP = "objReqMap";
+	
+	Map<String,HashSet<String>> reqMap = new HashMap<String, HashSet<String>>();
+	
+	public RequestResourceMappingLogProcessor(StatisticsManager manager) {
+		super(manager);
+		initializeStructures();
+		getManager().registerProcessor(this);
+	}
+	
+	public void initializeStructures(){
+		for(ASServer serv : getManager().getASServers().values()){
+			//add all structures here for each server that we will maintain
+			
+			//activity counter
+			serv.setStruct(ACTIVITY_COUNTER, new Long(0));
+			serv.setStruct(REQ_OBJ_MAP, new RequestToResourcesMap());
+			serv.setStruct(OBJ_REQ_MAP, new ResourceToRequestMap());
+			
+		}
+	}
+	
+	@Override
+	public void processLog(LoggingEvent le) {
+		
+		ASServer serv = getLogServer(le);
+		
+		// processing ACTIVITY_COUNTER
+		Long counter = ((Long) serv.getStruct(ACTIVITY_COUNTER)) + 1;
+		serv.setStruct(ACTIVITY_COUNTER, counter);
+		//log.info(serv.getServerId() + ":activityCounter:" + counter);
+		
+		// processing REQ_OBJ_MAP & OBJ_REQ_MAP
+		String guid = getUID(le);
+		
+		if(getLogType(le).equals(CACHE_LOG)){
+			HashSet<String> res = reqMap.get(guid);
+			if(res==null){
+				res=new HashSet<String>();
+				reqMap.put(guid, res);
+			}
+			String cacheRes = getCacheResource(le);
+			res.add(cacheRes);
+			
+		}else if(getLogType(le).equals(ACCESS_LOG)){
+			HashSet<String> res = reqMap.get(guid);
+			if(res==null || res.size()==0){
+				//no object access in this log.. discarding now
+				return;
+			}else{
+				
+				//get url+querystring
+				//timestamp httpMethod url returnCode timetakenMillis
+				String[] toks = ((String)le.getMessage()).split(" ");
+				String url = toks[1];
+				
+				RequestToResourcesMap reqToRes = (RequestToResourcesMap) serv.getStruct(REQ_OBJ_MAP);
+				
+				Collection<String> ress = reqMap.remove(guid);
+				//copy/transfer all resources associated with request url
+				//and delete this request node (guid) from our map. remove returns our collection
+				reqToRes.addResources(url, ress);
+				
+				ResourceToRequestMap resToReq = (ResourceToRequestMap) serv.getStruct(OBJ_REQ_MAP);
+				resToReq.mapResourcesToUrl(url, ress);
+
+			}
+			
+		}
+		
+	}
+	
+	//we assume le is from cache
+	private String getCacheResource(LoggingEvent le){
+		String resStr = (String)le.getMessage();
+		String[] strs = resStr.split("::");
+		resStr = strs[1];
+		return resStr;
+	}
+	
+}

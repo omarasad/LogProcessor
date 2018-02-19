@@ -1,0 +1,119 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import edu.mcgill.disl.log.StatisticsManager;
+
+
+public class CacheLogList {
+	
+	public ArrayList<CacheLogSegment> cacheLogList;
+	public CacheLogSegment currentLogInterval;
+	public int no_intervals;
+	long segBegTimeStamp = -1;
+	long segTimeInterval;
+	
+	StatisticsManager sm = null;
+	
+	public CacheLogList(StatisticsManager manager){
+		
+		sm = manager;
+		cacheLogList = new ArrayList<CacheLogSegment>();
+		segTimeInterval = Long.parseLong(sm.props.getProperty(StatisticsManager.SEGMENT_INTERVAL));
+		no_intervals = Integer.parseInt(sm.props.getProperty(StatisticsManager.NO_INTERVALS));
+//		System.out.println("cacheLogList created in constructor");
+		
+//		addNewCacheInterval();
+	}
+	
+	public HashMap<String, CacheObject> aggregateSegments(){
+		HashMap<String, CacheObject> hc = new HashMap<String, CacheObject>();
+		
+		int no_intervals = cacheLogList.size();
+		
+		if(no_intervals==0){
+			//System.out.println("No intervals yet. Returning null");
+			
+			return null;
+		}
+			
+		
+		for(int i=0; i<no_intervals && no_intervals > 0; i++)
+		{
+			
+				
+				CacheLogSegment cls = cacheLogList.get(no_intervals-1);
+				
+				Collection<CacheObject> c = cls.cacheMap.values();
+				Iterator<CacheObject> it = c.iterator();
+				
+				while(it.hasNext()){
+					CacheObject cot = it.next();
+					CacheObject cachObj = hc.get(cot.cacheKey);
+					if(cachObj == null){
+						hc.put(cot.cacheKey, cot);
+					}
+					else{
+						cachObj.getCount = cachObj.getCount + cot.getCount;
+					}
+				}
+				
+			no_intervals--;
+		}
+		
+		return hc;
+	}
+	
+	public void addNewCacheSegment(){
+		currentLogInterval = new CacheLogSegment();
+		cacheLogList.add(currentLogInterval);
+		if(cacheLogList.size()>no_intervals){
+			cacheLogList.remove(0);
+		}
+		segBegTimeStamp = System.currentTimeMillis();
+	}
+	
+	public void addToCacheLogInterval(CacheObject co, String type){
+		
+//		System.out.println("addToCacheLogInterval called by:" + co.cacheKey);
+		
+		if(segBegTimeStamp == -1 || (System.currentTimeMillis()-segBegTimeStamp>segTimeInterval))
+		{
+			//System.out.println("Inside CacheLogList of CacheLogProcessor: New Segment Interval added");
+			addNewCacheSegment();
+		} 
+		
+		CacheObject ct;
+		if((ct = currentLogInterval.cacheMap.get(co.cacheKey))!= null)
+		{
+//        	if(type.contains("get"))
+//        	{
+//        		ct.last_get_time = co.first_get_time;
+//        		ct.getCount++;
+//        	}
+//        	else if(type.contains("put"))
+//        	{
+//        		ct.last_put_time = co.first_put_time;
+//        		ct.putCount++;
+//        	}
+			ct.getCount++;
+		}
+		else
+		{
+			currentLogInterval.cacheMap.put(co.cacheKey, co);
+		}
+	}
+	
+	public static class CacheLogSegment{
+		public HashMap<String, CacheObject> cacheMap;
+		
+		public CacheLogSegment()
+		{
+			cacheMap = new HashMap<String, CacheObject>(); 
+		}
+	}
+
+}

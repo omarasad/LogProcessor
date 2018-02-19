@@ -1,0 +1,193 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.*;
+import java.util.Map.Entry;
+
+import edu.mcgill.disl.analytics.CacheLogList.CacheLogSegment;
+import edu.mcgill.disl.analytics.policy.LoadBalancerPolicy;
+import edu.mcgill.disl.log.StatisticsManager;
+import edu.mcgill.disl.log.processor.HttpRequestProcessor;
+import edu.mcgill.disl.log.processor.RequestResourceMappingLogProcessor;
+
+public class RequestBasedAnalyser extends Analyser {
+	
+	public static final String RBA_STRATEGY_CLASS = "rba.strategy.class";
+	public static final String RBA_STRATEGY_CONTINUELB = "rba.strategy.lbURLFreq";
+	
+	RequestBasedAnalyserStrategy strategy = null;
+	
+	//all variables that could be needed by strategy should be made public here or have public methods
+	public int cacheMemorySize;	
+	public int cacheSz;
+	public int numServers;
+	public int totalCapacity;
+	public int totalMemoryCapacity;
+	
+	public int lbURLFreq = 0;
+	
+	public RequestToResourcesMap reqToResAll=null;
+	public HashMap<String,HttpRequestObject> mergedHttpMapAll = null;
+	public List<HttpRequestObject> httpListAll;
+	
+	
+	//should ideally be kept in a load balancer class that contains lb specific properties and policy
+	public LoadBalancerPolicy currentLBPolicy = null;
+	
+	
+	public RequestBasedAnalyser(StatisticsManager manager) {
+		super(manager);
+		
+		setupStrategy();
+		
+	}
+	
+	//make it read a strategy from configuration
+	
+	public void setupStrategy(){
+		
+		try{
+		
+		Class c = Class.forName(manager.props.getProperty(RBA_STRATEGY_CLASS), false, this.getClass()
+				.getClassLoader());
+		
+		strategy = (RequestBasedAnalyserStrategy) c.getConstructor(new Class[] { RequestBasedAnalyser.class }).newInstance(this);
+		
+		}catch(Exception ex){
+			throw new RuntimeException(ex);
+		}
+	}
+
+	/**
+	 * Called by StatisticsManager periodically. Should create policy files for
+	 * AS and LB.
+	 *  
+	 */
+	
+	@Override
+	public void analyse()throws Exception {
+		
+		//GIVEN DATA
+		
+		/*
+		 * 1. Individual Cache Capacity  
+		 * 2. Derived: Total cache capacity
+		 * 
+		 * 
+		 */
+		
+		cacheSz = Integer.parseInt(manager.props.getProperty(StatisticsManager.AS_CACHE_SIZE));
+		
+		numServers = manager.getASServers().size();
+		
+		totalCapacity = cacheSz * numServers;
+		
+		lbURLFreq = Integer.parseInt(manager.props.getProperty(RBA_STRATEGY_CONTINUELB));
+		
+		// From Strucutres
+		
+		/*
+		 * get req->objs map for each server and merge them. 
+		 * 
+		 * get req frequency list
+		 * 
+		 * sort req frequency
+		 * 
+		 * 
+		 * 
+		 */
+		 
+		reqToResAll = mergeAllReqToRes();
+		
+		System.out.println("====reqToResAll===================\n");
+		
+		mergedHttpMapAll = mergeHttpRequestObjectsFromServers();
+		System.out.println("======mergedHttpMapAll===========\n");
+		
+		
+		//get HttpRequestObject list order by counter desc
+		httpListAll = HttpLogList.getHttpRequestObjectList(mergedHttpMapAll, true);
+		System.out.println("======httpListAll==========\n");
+		
+		
+		//call the strategy to generate policy 
+		
+		boolean success = strategy.generatePolicies();
+		
+		System.out.println("======Generated==========:" + success);
+		
+		if(success){
+			// send all AS policies
+			
+			String policyFor = manager.props.getProperty(StatisticsManager.POLICY_FOR);
+			if(policyFor == null || policyFor.equals(""))
+				policyFor = "both";
+			
+			if(policyFor.equalsIgnoreCase("as") || policyFor.equalsIgnoreCase("both")){		
+				for(ASServer serv : manager.getASServers().values()){
+					//TODO update the port logic in base class
+					sendASPolicy(serv.currentPolicy, serv.getServerId());
+					//System.out.println(serv.currentPolicy);
+				}
+			}
+			
+			//send lb policy
+			if(policyFor.equalsIgnoreCase("lb") || policyFor.equalsIgnoreCase("both")){
+				sendLBPolicy(currentLBPolicy, manager.props.getProperty(StatisticsManager.LBSERVER));
+			}
+		}
+	}
+	
+	/**
+	 * this method will first do segment merge.. and the all server merge
+	 */
+	private HashMap<String, HttpRequestObject> mergeHttpRequestObjectsFromServers(){
+		List<HashMap<String,HttpRequestObject>> list = new ArrayList<HashMap<String,HttpRequestObject>>();
+		
+		for(ASServer serv:manager.getASServers().values()){
+			HttpLogList hll = (HttpLogList)serv.getStruct(HttpRequestProcessor.REQ_LOG_GROUP);
+			HashMap<String,HttpRequestObject> aggMap = hll.aggregateSegments();
+			list.add(aggMap);
+		}
+		
+		return HttpLogList.mergeHttpRequestObjects(list);
+	}
+	
+	
+	
+	private RequestToResourcesMap mergeAllReqToRes(){
+		
+		RequestToResourcesMap mapAll = new RequestToResourcesMap();
+		
+		for(ASServer serv: manager.getASServers().values()){
+			RequestToResourcesMap map =	(RequestToResourcesMap)serv.getStruct(
+										RequestResourceMappingLogProcessor.REQ_OBJ_MAP);
+			
+			for(Entry<String, HashSet<String>> entry : map.map.entrySet()){
+				
+				HashSet<String> set = mapAll.map.get(entry.getKey());
+				if(set == null){
+					set = new HashSet<String>();
+					mapAll.map.put(entry.getKey(), set);
+				}
+				set.addAll(entry.getValue());
+			}
+		}
+		
+		return mapAll;
+	}
+	
+	public int getUniqueResourceCount(Collection<ASServer> asCon){
+		
+		HashSet<String> resources = new HashSet<String>();
+
+		for(ASServer AStemp : asCon){
+			CacheLogList cl = (CacheLogList) AStemp.getStruct("cacheLogGroup");
+			for(CacheLogSegment seg : cl.cacheLogList){
+				for(String res : seg.cacheMap.keySet()){
+					resources.add(res);
+				}
+			}
+		}
+		return resources.size();
+	}
+}

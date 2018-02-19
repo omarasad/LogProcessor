@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Specification-Title: JBoss
+Created-By: 1.3.1_18-b01 (Sun Microsystems Inc.)
+Ant-Version: Apache Ant 1.6.5
+Implementation-Title: JBoss [The Oracle]
+Specification-Vendor: JBoss (http://www.jboss.org/)
+Specification-Version: 5.1.0.GA
+Implementation-Vendor-Id: http://www.jboss.org/
+Implementation-Version: 5.1.0.GA (build: SVNTag=JBoss_5_1_0_GA date=20
+ 0905221053)
+Implementation-Vendor: JBoss Inc.
+Implementation-URL: http://www.jboss.org/
+
+Name: org/apache/log4j/
+Implementation-Title: log4j
+Implementation-Version: 1.2.14
+Implementation-Vendor: "Apache Software Foundation"
+

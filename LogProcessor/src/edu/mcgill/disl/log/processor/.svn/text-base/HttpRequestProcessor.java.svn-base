@@ -1,0 +1,127 @@
+package edu.mcgill.disl.log.processor;
+
+import edu.mcgill.disl.analytics.ASServer;
+import edu.mcgill.disl.analytics.HttpLogList;
+import edu.mcgill.disl.analytics.HttpRequestObject;
+
+import java.util.HashMap;
+
+import org.apache.log4j.spi.LoggingEvent;
+
+import edu.mcgill.disl.log.StatisticsManager;
+
+public class HttpRequestProcessor extends LogProcessor {
+	
+//	public HashMap<String, HttpRequestObject> reqMap;
+	
+	public static final String REQ_LOG_GROUP = "reqLogGroup";
+	
+	public HttpRequestProcessor(StatisticsManager sm){
+		super(sm);
+		
+		initializeStructures();
+		//register instance
+		getManager().registerProcessor(this);
+		
+	}
+	
+
+	@Override
+	public void processLog(LoggingEvent le) {
+		// TODO Auto-generated method stub
+	
+		if(getLogType(le).equals(CACHE_LOG))
+			return;
+		
+		//System.out.println("CacheLogProcessor: " + le.getMessage());
+		
+		ASServer serv = getLogServer(le);
+		
+		//timestamp httpMethod+url+qs returnCode timetakenMillis
+		
+		String[] strarr = ((String) (le.getMessage())).split(" ");
+		
+		String url = strarr[1];
+		int resp_code = Integer.parseInt(strarr[2]);
+		long timetaken = Long.parseLong(strarr[3]);
+				        
+		HttpLogList hl = (HttpLogList) serv.getStruct(REQ_LOG_GROUP);
+        
+		HttpRequestObject ho = new HttpRequestObject();
+    	ho.first_date_time = le.timeStamp;
+    	ho.last_date_time = le.timeStamp;
+    	ho.resp_code = resp_code;
+    	ho.url = url;// templatizeUrl(url);
+    	if(resp_code == 200 || resp_code == 304)
+    		ho.success_count ++;
+    	else
+    		ho.failure_count ++;
+    	ho.counter++;
+    	
+    	hl.addtoHttpLogInterval(ho, timetaken);
+        
+//        if(reqMap.containsKey(url))
+//        {
+//        	HttpRequestObject htemp = (HttpRequestObject) reqMap.get(url);
+//        	htemp.last_date_time = le.timeStamp;
+//        	htemp.resp_code = resp_code;
+//        	if(resp_code == 200 || resp_code == 304)
+//        	{
+//        		htemp.success_count ++;
+//        	}
+//        	else{
+//        		htemp.failure_count ++;
+//        	}
+//        	htemp.counter++;
+//        	htemp.execution_time = ((htemp.execution_time * (htemp.counter-1)) + timetaken)/ htemp.counter ;
+//        }
+//        else
+//        {
+//        	HttpRequestObject ho = new HttpRequestObject();
+//        	ho.first_date_time = le.timeStamp;
+//        	ho.last_date_time = le.timeStamp;
+//        	ho.resp_code = resp_code;
+//        	ho.url = url;
+//        	if(resp_code == 200 || resp_code == 304)
+//        		ho.success_count ++;
+//        	else
+//        		ho.failure_count ++;
+//        	ho.counter++;
+//        	
+//        }
+	}
+	
+	public void initializeStructures(){
+		for(ASServer serv : getManager().getASServers().values()){
+			//add all structures here for each server that we will maintain
+			
+			//activity counter
+//			serv.setStruct("reqMap", new HashMap<String, HttpRequestObject>());
+		
+			serv.setStruct(REQ_LOG_GROUP, new HttpLogList(manager));
+			
+		}
+	}
+
+	
+	public String templatizeUrl(String url){
+		
+		StringBuffer sb = new StringBuffer(url.length());
+		boolean isVal=false;
+		for(int i=0;i<url.length();i++){
+			char ch = url.charAt(i);
+			if(ch=='='){
+				isVal = true;
+			}else if(isVal){
+				if(ch=='&'){
+					isVal = false;
+				}else{
+					continue;
+				}
+			}
+			sb.append(ch);
+		}
+		return sb.toString();
+	}
+
+}

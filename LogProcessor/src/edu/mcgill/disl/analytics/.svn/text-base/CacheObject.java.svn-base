@@ -1,0 +1,47 @@
+package edu.mcgill.disl.analytics;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class CacheObject implements Comparable<CacheObject>{
+
+	public String cacheKey;
+	public long first_get_time;
+	public long last_get_time;
+	public long first_put_time;
+	public long last_put_time;
+	public int getCount;
+	public int putCount;
+	public String loggingLevel;
+	public int size;
+	public int no_sites;
+	public List<String> sites;
+	
+	public CacheObject()
+	{
+		cacheKey = new String();
+		first_get_time = 0;
+		last_get_time = 0;
+		first_put_time =0;
+		last_put_time = 0;
+		getCount = 0;
+		putCount = 0;
+		size = 0;
+		no_sites = 1;
+		loggingLevel = new String();
+		sites = new ArrayList<String>();
+	}
+	
+	public String toString()
+	{
+		String result = new String();
+		result = cacheKey + ":: getCount=" + getCount + "::NoSites=" + no_sites + "\n";
+		return result;
+	}
+
+	@Override
+	public int compareTo(CacheObject o) {
+		// TODO Auto-generated method stub
+		return (o.getCount - this.getCount);
+	}
+}

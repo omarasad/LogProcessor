@@ -1,0 +1,227 @@
+package edu.mcgill.disl.log;
+
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
+
+import edu.mcgill.disl.analytics.ASServer;
+import edu.mcgill.disl.analytics.Analyser;
+import edu.mcgill.disl.log.processor.*;
+
+public class StatisticsManager implements Runnable {
+
+	public static final String CONFIG_FILE = "/home/user/dislcluster/thesis/LogProcessor/src/config.xml";
+	public static final String PROCESSOR_CLASSES = "processor.classes";
+	public static final String ANALYSER_CLASSES = "analyser.classes";
+	public static final String APPSERVERS = "appservers";
+	public static final String LBSERVER = "lbserver";
+	public static final String ANALYSIS_INTERVAL = "analysis.interval";
+	public static final String AS_CACHE_SIZE = "as.cache.size";
+	public static final String AS_CACHE_MEMORY = "as.cache.memory";
+	public static final String REPL_PERCENT = "repl_percent";
+	public static final String EACH_CACHE = "each_cache";
+	public static final String SEGMENT_INTERVAL = "segment_interval";
+	public static final String NO_INTERVALS = "no_intervals";
+	public static final String NO_CACHE_OBJECT = "no_cache_object";
+	public static final String OBJ_FOR_REQ = "obj_for_req";
+	
+	public static final String POLICY_FOR = "policy.for";
+	
+	public boolean acceptLogs = true;
+	
+
+	static StatisticsManager manager;
+
+	ArrayList<LogProcessor> processors = new ArrayList<LogProcessor>();
+
+	ArrayList<Analyser> analysers = new ArrayList<Analyser>();
+
+	Map<String, ASServer> servers = new HashMap<String, ASServer>();
+
+	static final Logger log = Logger.getLogger(StatisticsManager.class
+			.getName());
+
+	public Properties props;
+
+	public static StatisticsManager getInstance() {
+		if (manager == null) {
+			manager = new StatisticsManager();
+		}
+		return manager;
+	}
+
+	private StatisticsManager() {
+
+		try {
+			// load properties
+			props = new Properties();
+			props.loadFromXML(new FileInputStream(CONFIG_FILE));
+
+			// load server instances
+			instantiateASServers();
+
+			// load log processors
+			instantiateLogProcessors();
+
+			// load analytics processors
+			instantiateAnalysers();
+
+			// run the thread
+			Thread t = new Thread(this);
+			t.start();
+
+		} catch (Exception ex) {
+			log.fatal(ex.getMessage(), ex);
+		}
+	}
+
+	public void instantiateASServers() {
+		String[] asServers = props.getProperty(APPSERVERS).split(",");
+		int servNo = 0;
+		for (String server : asServers) {
+			server = server.trim();
+			if (!server.equals("")) {
+				servers.put(server, new ASServer(server,servNo++));
+			}
+		}
+		log.debug("======AS Instances======" + servers);
+	}
+
+	public void instantiateLogProcessors() throws Exception {
+		// create log processors and add to the list
+		String[] classes = props.getProperty(PROCESSOR_CLASSES).split(",");
+		for (String cls : classes) {
+			cls = cls.trim();
+			if (!cls.equals("")) {
+				Class c = Class.forName(cls, false, this.getClass()
+						.getClassLoader());
+				c.getConstructor(new Class[] { StatisticsManager.class })
+						.newInstance(this);
+			}
+		}
+	}
+
+	public void instantiateAnalysers() throws Exception {
+		// create log processors and add to the list
+		String[] classes = props.getProperty(ANALYSER_CLASSES).split(",");
+		for (String cls : classes) {
+			cls = cls.trim();
+			if (!cls.equals("")) {
+				Class c = Class.forName(cls, false, this.getClass()
+						.getClassLoader());
+				Analyser a = (Analyser)c.getConstructor(new Class[] { StatisticsManager.class })
+						.newInstance(this);
+				analysers.add(a);
+			}
+		}
+	}
+
+	public void registerProcessor(LogProcessor lp) {
+		synchronized (processors) {
+			if (!processors.contains(lp)) {
+				processors.add(lp);
+				log.debug("Log Processor add:" + lp);
+			}
+		}
+	}
+
+	public void deRegisterProcessor(LogProcessor lp) {
+		synchronized (processors) {
+			processors.remove(lp);
+			log.debug("Log Processor removed:" + lp);
+		}
+	}
+
+	public synchronized void processLog(LoggingEvent le) {
+		
+		if(acceptLogs)
+		{
+			for (LogProcessor lp : processors) {
+				lp.processLog(le);
+			}
+		}
+		//printStats();
+
+	}
+
+	public void runAnalysers() {
+		for (Analyser analyser : analysers) {
+			try{
+				analyser.analyse();
+			}catch(Exception ex){
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	public void printStats() {
+		for (ASServer serv : servers.values()) {
+
+			//System.out.println("==============BEGIN STATS===================");
+
+			//System.out.println("AS Server: " + serv.getServerId());
+
+			Map<String, Object> structs = serv.getStructs();
+
+			for (String structId : structs.keySet()) {
+
+				//System.out.println("Structure Name: " + structId);
+
+				//System.out.println("************Detail************\n"	+ structs.get(structId));
+
+			}
+
+			//System.out.println("============END STATS=====================");
+		}
+	}
+
+	public ASServer getASServer(String serverId) {
+		return servers.get(serverId);
+	}
+	
+	public ASServer getASServer(int servNo) {
+		ASServer as = null;
+		
+		Collection<ASServer> ascon = servers.values();
+		Iterator<ASServer> itas = ascon.iterator();
+		
+		while(itas.hasNext()){
+		
+			as = itas.next();
+			if(as.serverNo == servNo)
+				return as;
+		}
+		
+		return null;
+	}
+
+
+	public Map<String, ASServer> getASServers() {
+		return servers;
+	}
+
+	@Override
+	public void run() {
+		long analyseInterval = Long.parseLong(props.getProperty(ANALYSIS_INTERVAL));
+
+		while (true) {
+
+			try {
+
+				Thread.sleep(analyseInterval);
+				
+				this.acceptLogs = false;
+				
+				runAnalysers();
+				
+				this.acceptLogs = true;
+
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+}
